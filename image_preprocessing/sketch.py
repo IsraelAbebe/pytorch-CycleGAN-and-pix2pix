@@ -132,7 +132,8 @@ def main(args):
                 gray_count += 1
                 print('gray' + str(gray_count))
 
-                if tfile:
+                if args.train is not None:
+                    print("GEBA")
                     if not os.path.exists(tfile): os.mkdir(tfile)
                     gray_pic = np.append(real, gray_pic, axis=1)
                     final_img = Image.fromarray(gray_pic)
