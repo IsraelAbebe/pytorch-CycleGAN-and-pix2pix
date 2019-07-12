@@ -91,6 +91,7 @@ def main(args):
     if not ifile:
          print(parser.print_help(sys.stderr))
          sys.exit()
+
     input_paths = glob.glob(ifile+ '/*.jpg')
     input_paths+=(glob.glob(ifile+ '/*.jpeg'))
     input_paths+=(glob.glob(ifile + '/*.png'))
@@ -127,7 +128,7 @@ def main(args):
                     gray_pic = np.tile(gray_pic, [1, 1, 3]) # last one 3
 
                 sketch = Image.fromarray(gray_pic, 'RGB')
-                sketch.save(ofile, 't' + filename)
+                sketch.save(os.path.join(ofile, 't' + filename))
                 gray_count += 1
                 print('gray' + str(gray_count))
 
