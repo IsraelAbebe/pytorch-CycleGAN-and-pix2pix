@@ -88,6 +88,9 @@ def main(args):
     n_point=50
     dir = 3
 
+    if not ifile:
+         print(parser.print_help(sys.stderr))
+         sys.exit()
     input_paths = glob.glob(ifile+ '/*.jpg')
     input_paths+=(glob.glob(ifile+ '/*.jpeg'))
     input_paths+=(glob.glob(ifile + '/*.png'))
