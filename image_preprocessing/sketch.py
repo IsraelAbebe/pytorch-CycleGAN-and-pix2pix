@@ -68,7 +68,6 @@ def gen_color_line(mat, dir,max_length,max_dif):
 def save_combined(img_arr, path, filename):
 
     wsize = 512  # double the resolution 1024
-    train_count = 0
     final_img = Image.fromarray(img_arr)
 
     im = final_img
@@ -86,8 +85,7 @@ def save_combined(img_arr, path, filename):
         im = im.resize((wsize // 2, (wsize // 4)))
         im.save(os.path.join(path, 't' + filename))#t
 
-    train_count += 1
-    print('train' + str(train_count))
+    print('concat image saved')
 
 def main(args):
 
@@ -96,9 +94,8 @@ def main(args):
     orgtogen = args.orgtogen
     gentoorg = args.gentoorg
 
-    print("GEN::", gen, ".", orgtogen, ".", gentoorg)
-
-    if not os.path.exists(gen): os.mkdir(gen)
+    if gen:
+        if not os.path.exists(gen): os.mkdir(gen)
 
     gray_count = 0
     #parameter
@@ -164,16 +161,17 @@ def main(args):
                     gray_pic = np.tile(gray_pic, [1, 1, c]) # last one 3
 
                 sketch = Image.fromarray(gray_pic, mode = 'RGB')
-                sketch.save(os.path.join(gen, 't' + filename))
-                gray_count += 1
-                print('gray' + str(gray_count))
+                if gen:
+                    sketch.save(os.path.join(gen, 't' + filename))
+                    gray_count += 1
+                    print('gray' + str(gray_count))
 
-                if args.orgtogen:# is not None:
+                if orgtogen:# is not None:
                     if not os.path.exists(orgtogen): os.mkdir(orgtogen)
                     combined_pic = np.append(real, gray_pic, axis=1)
                     save_combined(combined_pic, orgtogen, filename)
 
-                if args.gentoorg:
+                if gentoorg:
                     if not os.path.exists(gentoorg): os.mkdir(gentoorg)
                     combined_pic = np.append(gray_pic, real, axis=1)
                     save_combined(combined_pic, gentoorg, filename)
