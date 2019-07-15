@@ -65,18 +65,44 @@ def gen_color_line(mat, dir,max_length,max_dif):
             length = abs(wt - ws) + abs(ht - hs)
     return ws, hs, wt, ht, length
 
+def save_combined(img_arr, path, filename):
+
+    wsize = 512  # double the resolution 1024
+    train_count = 0
+    final_img = Image.fromarray(img_arr)
+
+    im = final_img
+    w, h = im.size
+    hsize = int(h * wsize / float(w))
+    if hsize * 2 > wsize:  # crop to three
+        im = im.resize((wsize, hsize))
+        bounds1 = (0, 0, wsize, int(wsize / 2)) #/2
+        cropImg1 = im.crop(bounds1)
+        # cropImg1.show()
+        cropImg1.save(os.path.join(path, 'u' + filename))
+        bounds2 = (0, hsize - int(wsize / 2), wsize, hsize) #wsize/2
+
+    else:
+        im = im.resize((wsize // 2, (wsize // 4)))
+        im.save(os.path.join(path, 't' + filename))#t
+
+    train_count += 1
+    print('train' + str(train_count))
 
 def main(args):
 
     ifile = args.input
-    ofile = args.output
-    tfile = args.train
-    if not os.path.exists(ofile): os.mkdir(ofile)
+    gen = args.gen
+    orgtogen = args.orgtogen
+    gentoorg = args.gentoorg
+
+    print("GEN::", gen, ".", orgtogen, ".", gentoorg)
+
+    if not os.path.exists(gen): os.mkdir(gen)
 
     gray_count = 0
-    train_count = 0
     #parameter
-    wsize = 512  # double the resolution 1024
+
     Gamma = 0.97 #0.97
     Phi = 200
     Epsilon = 0.5 #0.5
@@ -138,37 +164,25 @@ def main(args):
                     gray_pic = np.tile(gray_pic, [1, 1, c]) # last one 3
 
                 sketch = Image.fromarray(gray_pic, mode = 'RGB')
-                sketch.save(os.path.join(ofile, 't' + filename))
+                sketch.save(os.path.join(gen, 't' + filename))
                 gray_count += 1
                 print('gray' + str(gray_count))
 
-                if args.train is not None:
-                    if not os.path.exists(tfile): os.mkdir(tfile)
-                    gray_pic = np.append(real, gray_pic, axis=1)
-                    final_img = Image.fromarray(gray_pic)
+                if args.orgtogen:# is not None:
+                    if not os.path.exists(orgtogen): os.mkdir(orgtogen)
+                    combined_pic = np.append(real, gray_pic, axis=1)
+                    save_combined(combined_pic, orgtogen, filename)
 
-                    im = final_img
-                    w, h = im.size
-                    hsize = int(h * wsize / float(w))
-                    if hsize * 2 > wsize:  # crop to three
-                        im = im.resize((wsize, hsize))
-                        bounds1 = (0, 0, wsize, int(wsize / 2)) #/2
-                        cropImg1 = im.crop(bounds1)
-                        # cropImg1.show()
-                        cropImg1.save(os.path.join(tfile, 'u' + filename))
-                        bounds2 = (0, hsize - int(wsize / 2), wsize, hsize) #wsize/2
-
-                    else:
-                        im = im.resize((wsize // 2, (wsize // 4)))
-                        im.save(os.path.join(tfile, 't' + filename))#t
-
-                    train_count += 1
-                    print('train' + str(train_count))
+                if args.gentoorg:
+                    if not os.path.exists(gentoorg): os.mkdir(gentoorg)
+                    combined_pic = np.append(gray_pic, real, axis=1)
+                    save_combined(combined_pic, gentoorg, filename)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=str)
-    parser.add_argument("--output", type=str, default="output")
-    parser.add_argument('--train', nargs='?')
+    parser.add_argument('--input', type=str)
+    parser.add_argument('--gen', type=str)#, default="output")#, action="store_true")
+    parser.add_argument('--orgtogen', type=str)
+    parser.add_argument('--gentoorg', type=str)#, nargs='?')
     args = parser.parse_args()
     main(args)
