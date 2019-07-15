@@ -100,6 +100,14 @@ def main(args):
         filepath, filename = os.path.split(files1)
 
         im = Image.open(files1).convert('L')
+        im_arr = np.array(im)
+
+        #if im_arr.ndim == 2:
+        #    img = np.stack((im_arr,im_arr,im_arr),axis=2)
+        #    print("LEWET SHAPE", img.shape)
+        #    im = Image.fromarray(img)
+
+
         im = array(ImageEnhance.Sharpness(im).enhance(5.0)) #3 neber
         im2 = filters.gaussian_filter(im, Sigma)
         im3 = filters.gaussian_filter(im, Sigma * k)
@@ -116,24 +124,25 @@ def main(args):
         color_pic = Image.open(files1)
         real = np.atleast_2d(color_pic)
 
+        if real.ndim == 2:
+            real = np.stack((real, real, real),axis=2)
 
         if real.ndim == 3:
             w, h, c = real.shape
-            if c==3:
+            if c>0:
                 image = color_pic.filter(MyGaussianBlur(radius=5))
                 mat = np.atleast_2d(image)
 
                 if gray_pic.ndim == 2:
                     gray_pic = np.expand_dims(gray_pic, 2)
-                    gray_pic = np.tile(gray_pic, [1, 1, 3]) # last one 3
+                    gray_pic = np.tile(gray_pic, [1, 1, c]) # last one 3
 
-                sketch = Image.fromarray(gray_pic, 'RGB')
+                sketch = Image.fromarray(gray_pic, mode = 'RGB')
                 sketch.save(os.path.join(ofile, 't' + filename))
                 gray_count += 1
                 print('gray' + str(gray_count))
 
                 if args.train is not None:
-                    print("GEBA")
                     if not os.path.exists(tfile): os.mkdir(tfile)
                     gray_pic = np.append(real, gray_pic, axis=1)
                     final_img = Image.fromarray(gray_pic)
