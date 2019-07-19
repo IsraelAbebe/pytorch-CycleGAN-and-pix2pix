@@ -88,7 +88,7 @@ def save_combined(img_arr, path, filename):
     print('concat image saved')
 
 def main(args):
-
+    print(args.input,args.gen,args.orgtogen,args.gentoorg)
     ifile = args.input
     gen = args.gen
     orgtogen = args.orgtogen
@@ -125,11 +125,6 @@ def main(args):
         im = Image.open(files1).convert('L')
         im_arr = np.array(im)
 
-        #if im_arr.ndim == 2:
-        #    img = np.stack((im_arr,im_arr,im_arr),axis=2)
-        #    print("LEWET SHAPE", img.shape)
-        #    im = Image.fromarray(img)
-
 
         im = array(ImageEnhance.Sharpness(im).enhance(5.0)) #3 neber
         im2 = filters.gaussian_filter(im, Sigma)
@@ -165,16 +160,19 @@ def main(args):
                     sketch.save(os.path.join(gen, 't' + filename))
                     gray_count += 1
                     print('gray' + str(gray_count))
+                    return sketch
 
                 if orgtogen:# is not None:
                     if not os.path.exists(orgtogen): os.mkdir(orgtogen)
                     combined_pic = np.append(real, gray_pic, axis=1)
                     save_combined(combined_pic, orgtogen, filename)
+                    return None
 
                 if gentoorg:
                     if not os.path.exists(gentoorg): os.mkdir(gentoorg)
                     combined_pic = np.append(gray_pic, real, axis=1)
                     save_combined(combined_pic, gentoorg, filename)
+                    return None
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
