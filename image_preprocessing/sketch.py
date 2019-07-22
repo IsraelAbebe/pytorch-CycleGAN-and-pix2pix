@@ -6,7 +6,6 @@ import glob, os
 import sys, getopt
 import argparse
 
-
 class MyGaussianBlur(ImageFilter.Filter):
     name = "GaussianBlur"
 
@@ -65,12 +64,9 @@ def gen_color_line(mat, dir,max_length,max_dif):
             length = abs(wt - ws) + abs(ht - hs)
     return ws, hs, wt, ht, length
 
-def save_combined(img_arr, path, filename):
+def save_combined(im, path, filename):
 
     wsize = 512  # double the resolution 1024
-    final_img = Image.fromarray(img_arr)
-
-    im = final_img
     w, h = im.size
     hsize = int(h * wsize / float(w))
     if hsize * 2 > wsize:  # crop to three
@@ -87,96 +83,127 @@ def save_combined(img_arr, path, filename):
 
     print('concat image saved')
 
-def main(args):
-    print(args.input,args.gen,args.orgtogen,args.gentoorg)
-    ifile = args.input
-    gen = args.gen
-    orgtogen = args.orgtogen
-    gentoorg = args.gentoorg
-
-    if gen:
-        if not os.path.exists(gen): os.mkdir(gen)
-
-    gray_count = 0
-    #parameter
-
+def sketch(im, color_pic, filename):
     Gamma = 0.97 #0.97
     Phi = 200
     Epsilon = 0.5 #0.5
     k = 2
     Sigma = 1.5
+
+    im = array(ImageEnhance.Sharpness(im).enhance(5.0)) #3 neber
+    im2 = filters.gaussian_filter(im, Sigma)
+    im3 = filters.gaussian_filter(im, Sigma * k)
+    differencedIm2 = im2 - (Gamma * im3)
+    (x, y) = shape(im2)
+    for i in range(x):
+        for j in range(y):
+            if differencedIm2[i, j] < Epsilon:
+                differencedIm2[i, j] = 1
+            else:
+                differencedIm2[i, j] = 250 + tanh(Phi * (differencedIm2[i, j]))
+
+    gray_pic = differencedIm2.astype(np.uint8)
+
+    org_pic = np.atleast_2d(color_pic)
+
+    if org_pic.ndim == 2:
+        org_pic = np.stack((org_pic, org_pic, org_pic),axis=2)
+
+    if org_pic.ndim == 3:
+        w, h, c = org_pic.shape
+        if c>0:
+            image = color_pic.filter(MyGaussianBlur(radius=5))
+            mat = np.atleast_2d(image)
+
+            if gray_pic.ndim == 2:
+                gray_pic = np.expand_dims(gray_pic, 2)
+                gray_pic = np.tile(gray_pic, [1, 1, c]) # last one 3
+
+            return gray_pic, org_pic
+
+def save_gen(gen, sketch, filename):
+    print("GENERATED: ", gen)
+    print("FILENAME: ", filename)
+    print("ONLY FILENAME:", os.path.basename(filename))
+    sketch.save(os.path.join(gen, 't' + filename))
+    print('gray image', os.path.join(gen, 't' + filename), " saved")
+    return sketch
+
+def save_orgtogen(gray_pic, org_pic, orgtogen, filename):
+
+    combined_pic = np.append(org_pic, gray_pic, axis=1)
+    concat_img = Image.fromarray(combined_pic)
+    save_combined(concat_img, orgtogen, filename)
+    return concat_img
+
+def save_gentoorg(gray_pic, org_pic, gentoorg, filename):
+
+    combined_pic = np.append(gray_pic, org_pic, axis=1)
+    concat_img = Image.fromarray(combined_pic)
+    save_combined(concat_img, gentoorg, filename)
+    return concat_img
+
+def save_results(im, color_pic, filename, gen, orgtogen, gentoorg):
+
+    gray_pic, org_pic = sketch(im, color_pic, filename)
+    sketch_pic = Image.fromarray(gray_pic, mode = 'RGB')
+    print(filename)
+    if gen:
+        if not os.path.exists(gen): os.mkdir(gen)
+        save_gen(gen, sketch_pic, os.path.basename(filename))
+    if orgtogen:
+        if not os.path.exists(orgtogen): os.mkdir(orgtogen)
+        save_orgtogen(gray_pic, org_pic, orgtogen, os.path.basename(filename))
+    if gentoorg:
+        if not os.path.exists(gentoorg): os.mkdir(gentoorg)
+        save_gentoorg(gray_pic, org_pic, gentoorg, os.path.basename(filename))
+
+def main(args):
+
+    # args values
+    input_dir = args.input_dir
+    gen = args.gen
+    orgtogen = args.orgtogen
+    gentoorg = args.gentoorg
+    input_image = args.input_image
+
+    #parameter
     max_length=20
     min_length=10
     max_dif=30
     n_point=50
     dir = 3
 
-    if not ifile:
+    if input_image:
+        #filepath, filename = os.path.split(files1)
+        if not os.path.exists(input_image): os.mkdir(input_image)
+        filename = input_image
+        print("FILENAME:", filename)
+        im = Image.open(filename).convert('L')
+        color_pic = Image.open(filename)
+
+        save_results(im, color_pic, filename, gen, orgtogen, gentoorg)
+
+    if input_dir:
+        input_paths = glob.glob(input_dir+ '/*.jpg')
+        input_paths+=(glob.glob(input_dir+ '/*.jpeg'))
+        input_paths+=(glob.glob(input_dir + '/*.png'))
+
+        for files1 in input_paths:
+            filepath, filename = os.path.split(files1)
+            im = Image.open(files1).convert('L')
+            color_pic = Image.open(files1)
+
+            save_results(im, color_pic, filename, gen, orgtogen, gentoorg)
+
+    if not input_dir and not input_image:
          print(parser.print_help(sys.stderr))
          sys.exit()
 
-    input_paths = glob.glob(ifile+ '/*.jpg')
-    input_paths+=(glob.glob(ifile+ '/*.jpeg'))
-    input_paths+=(glob.glob(ifile + '/*.png'))
-
-    for files1 in input_paths:
-        filepath, filename = os.path.split(files1)
-
-        im = Image.open(files1).convert('L')
-        im_arr = np.array(im)
-
-
-        im = array(ImageEnhance.Sharpness(im).enhance(5.0)) #3 neber
-        im2 = filters.gaussian_filter(im, Sigma)
-        im3 = filters.gaussian_filter(im, Sigma * k)
-        differencedIm2 = im2 - (Gamma * im3)
-        (x, y) = shape(im2)
-        for i in range(x):
-            for j in range(y):
-                if differencedIm2[i, j] < Epsilon:
-                    differencedIm2[i, j] = 1
-                else:
-                    differencedIm2[i, j] = 250 + tanh(Phi * (differencedIm2[i, j]))
-
-        gray_pic = differencedIm2.astype(np.uint8)
-        color_pic = Image.open(files1)
-        real = np.atleast_2d(color_pic)
-
-        if real.ndim == 2:
-            real = np.stack((real, real, real),axis=2)
-
-        if real.ndim == 3:
-            w, h, c = real.shape
-            if c>0:
-                image = color_pic.filter(MyGaussianBlur(radius=5))
-                mat = np.atleast_2d(image)
-
-                if gray_pic.ndim == 2:
-                    gray_pic = np.expand_dims(gray_pic, 2)
-                    gray_pic = np.tile(gray_pic, [1, 1, c]) # last one 3
-
-                sketch = Image.fromarray(gray_pic, mode = 'RGB')
-                if gen:
-                    sketch.save(os.path.join(gen, 't' + filename))
-                    gray_count += 1
-                    print('gray' + str(gray_count))
-                    return sketch
-
-                if orgtogen:# is not None:
-                    if not os.path.exists(orgtogen): os.mkdir(orgtogen)
-                    combined_pic = np.append(real, gray_pic, axis=1)
-                    save_combined(combined_pic, orgtogen, filename)
-                    return None
-
-                if gentoorg:
-                    if not os.path.exists(gentoorg): os.mkdir(gentoorg)
-                    combined_pic = np.append(gray_pic, real, axis=1)
-                    save_combined(combined_pic, gentoorg, filename)
-                    return None
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', type=str)
+    parser.add_argument('--input_dir', type=str)
+    parser.add_argument('--input_image', type=str)
     parser.add_argument('--gen', type=str)#, default="output")#, action="store_true")
     parser.add_argument('--orgtogen', type=str)
     parser.add_argument('--gentoorg', type=str)#, nargs='?')

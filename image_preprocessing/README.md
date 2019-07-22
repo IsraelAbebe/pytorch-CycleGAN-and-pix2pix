@@ -7,26 +7,29 @@ Sketch-to-image synthesis using Conditional Generative Adversarial Networks (cGA
 
 # Usage
 
-python3 sketch.py --input INPUT_FOLDER_PATH --gen PATH_FOR_SKETCH [--gentoorg PATH_FOR_GENTOORG] [--orgtogen PATH_FOR_ORGTOGEN]
+python3 sketch.py [--input_dir INPUT_FOLDER_PATH --input_image INPUT_IMAGE_PATH] [--gen PATH_FOR_SKETCH] [--gentoorg PATH_FOR_GENTOORG] [--orgtogen PATH_FOR_ORGTOGEN]
 
-To save only the generated sketch, run it with --gen option with the directory you want to store the generated images
+To save only the generated sketch, run it with --gen option with the directory (image path) you want to store the generated images
 
 ```bash
-                python sketch.py --input INPUT_FOLDER_PATH --gen SKETCH_PATH
+                python sketch.py --input_image INPUT_IMAGE_PATH --gen SKETCH_PATH
+                python sketch.py --input_dir INPUT_DIR_PATH --gen SKETCH_PATH
 ```
 
 To store a concatenated image with the original and generated pictures
 
 ```bash
-                python sketch.py --input INPUT_FOLDER_PATH --orgtogen SKETCH_PATH
+                python sketch.py --input_image INPUT_IMAGE_PATH --orgtogen SKETCH_PATH
+                python sketch.py --input_dir INPUT_DIR_PATH --orgtogen SKETCH_PATH
 ```
 
 To store a concatenated image with the generated and original picture
 
 ```bash
-                python sketch.py --input INPUT_FOLDER_PATH --gentoorg SKETCH_PATH
+                python sketch.py --input_image INPUT_IMAGE_PATH --gentoorg SKETCH_PATH
+                python sketch.py --input_dir INPUT_DIR_PATH --gentoorg SKETCH_PATH
 ```
 
 # TODO
 
-- Take specific inputs in addition to a folder
+- Incorporate with face detect, crop and remove dots codebase

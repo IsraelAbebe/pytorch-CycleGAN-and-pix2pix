@@ -82,10 +82,9 @@ def facecrop(image):
 # remove_dots("t00002.jpg")
 # merge_images("00002.jpg","t00002.jpg")
 # image_resize("result/00002.jpg")
-    
+
 # source_dir = "output/"
 # dir = os.listdir(source_dir)
 # for i in dir:
 #     res = remove_dots(source_dir+i)
 #     print(res)
-
