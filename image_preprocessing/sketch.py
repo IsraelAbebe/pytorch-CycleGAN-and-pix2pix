@@ -1,10 +1,21 @@
 from PIL import Image, ImageEnhance, ImageFilter
-from pylab import *
+
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+#from pylab import *
+
 from scipy.ndimage import filters
+
+from scipy.misc import imsave
 
 import glob, os
 import sys, getopt
 import argparse
+
+import cv2
+import numpy as np
+#import clean
 
 class MyGaussianBlur(ImageFilter.Filter):
     name = "GaussianBlur"
@@ -21,6 +32,42 @@ class MyGaussianBlur(ImageFilter.Filter):
         else:
             return image.gaussian_blur(self.radius)
 
+def remove_dots(image):
+
+    img = cv2.imread(image)
+    _, blackAndWhite = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV)
+    nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(blackAndWhite, None, None, None, 8, cv2.CV_32S)
+    sizes = stats[1:, -1] #get CC_STAT_AREA component
+    img2 = np.zeros((labels.shape), np.uint8)
+
+    for i in range(0, nlabels - 1):
+        if sizes[i] >= 50:   #filter small dotted regions
+            img2[labels == i + 1] = 255
+
+    res = cv2.bitwise_not(img2)
+    result = cv2.imwrite(file1, res)
+    return result
+
+def facecrop(image, face_crop):
+    facedata = "haarcascade_frontalface_alt.xml"
+    cascade = cv2.CascadeClassifier(facedata)
+    img = cv2.imread(image)
+    minisize = (img.shape[1],img.shape[0])
+    miniframe = cv2.resize(img, minisize)
+
+    faces = cascade.detectMultiScale(miniframe)
+
+    for f in faces:
+        x, y, w, h = [ v for v in f ]
+        # cv2.rectangle(img, (x,y), (x+w,y+h), (255,255,255))
+
+        sub_face = img[y-face_crop:y+h+face_crop, x-face_crop:x+w+face_crop] #face_crop = 100
+        if not os.path.exists("FACECROP"): os.mkdir("FACECROP")
+        imsave(os.path.join("FACECROP", 't' + os.path.basename(image)), sub_face)
+        imsave(image, sub_face)
+        #sub_face.save(os.path.join("FACECROP", 't' + os.path.basename(image))) #t
+        return image
+        #return "FACECROP", 't' + os.path.basename(image)
 
 def start(mat):
     w, h, c = mat.shape
@@ -69,6 +116,7 @@ def save_combined(im, path, filename):
     wsize = 512  # double the resolution 1024
     w, h = im.size
     hsize = int(h * wsize / float(w))
+
     if hsize * 2 > wsize:  # crop to three
         im = im.resize((wsize, hsize))
         bounds1 = (0, 0, wsize, int(wsize / 2)) #/2
@@ -90,17 +138,17 @@ def sketch(im, color_pic, filename):
     k = 2
     Sigma = 1.5
 
-    im = array(ImageEnhance.Sharpness(im).enhance(5.0)) #3 neber
+    im = np.array(ImageEnhance.Sharpness(im).enhance(5.0)) #3 neber
     im2 = filters.gaussian_filter(im, Sigma)
     im3 = filters.gaussian_filter(im, Sigma * k)
     differencedIm2 = im2 - (Gamma * im3)
-    (x, y) = shape(im2)
+    (x, y) = np.shape(im2)
     for i in range(x):
         for j in range(y):
             if differencedIm2[i, j] < Epsilon:
                 differencedIm2[i, j] = 1
             else:
-                differencedIm2[i, j] = 250 + tanh(Phi * (differencedIm2[i, j]))
+                differencedIm2[i, j] = 250 + np.tanh(Phi * (differencedIm2[i, j]))
 
     gray_pic = differencedIm2.astype(np.uint8)
 
@@ -122,9 +170,6 @@ def sketch(im, color_pic, filename):
             return gray_pic, org_pic
 
 def save_gen(gen, sketch, filename):
-    print("GENERATED: ", gen)
-    print("FILENAME: ", filename)
-    print("ONLY FILENAME:", os.path.basename(filename))
     sketch.save(os.path.join(gen, 't' + filename))
     print('gray image', os.path.join(gen, 't' + filename), " saved")
     return sketch
@@ -147,7 +192,6 @@ def save_results(im, color_pic, filename, gen, orgtogen, gentoorg):
 
     gray_pic, org_pic = sketch(im, color_pic, filename)
     sketch_pic = Image.fromarray(gray_pic, mode = 'RGB')
-    print(filename)
     if gen:
         if not os.path.exists(gen): os.mkdir(gen)
         save_gen(gen, sketch_pic, os.path.basename(filename))
@@ -166,6 +210,7 @@ def main(args):
     orgtogen = args.orgtogen
     gentoorg = args.gentoorg
     input_image = args.input_image
+    face_crop = args.facecrop
 
     #parameter
     max_length=20
@@ -178,9 +223,9 @@ def main(args):
         #filepath, filename = os.path.split(files1)
         if not os.path.exists(input_image): os.mkdir(input_image)
         filename = input_image
-        print("FILENAME:", filename)
+        cropped_im = facecrop(filename, face_crop)
         im = Image.open(filename).convert('L')
-        color_pic = Image.open(filename)
+        color_pic = Image.open(cropped_im)
 
         save_results(im, color_pic, filename, gen, orgtogen, gentoorg)
 
@@ -191,9 +236,13 @@ def main(args):
 
         for files1 in input_paths:
             filepath, filename = os.path.split(files1)
+            if face_crop:
+                cropped_im = facecrop(files1, face_crop)
+                print("Face cropped saved:", files1)
+            #remove_dots(files1)
             im = Image.open(files1).convert('L')
             color_pic = Image.open(files1)
-
+            #remove_dots(im)
             save_results(im, color_pic, filename, gen, orgtogen, gentoorg)
 
     if not input_dir and not input_image:
@@ -206,6 +255,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_image', type=str)
     parser.add_argument('--gen', type=str)#, default="output")#, action="store_true")
     parser.add_argument('--orgtogen', type=str)
+    parser.add_argument('--facecrop', type=int)
     parser.add_argument('--gentoorg', type=str)#, nargs='?')
     args = parser.parse_args()
     main(args)

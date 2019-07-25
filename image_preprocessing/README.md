@@ -7,7 +7,7 @@ Sketch-to-image synthesis using Conditional Generative Adversarial Networks (cGA
 
 # Usage
 
-python3 sketch.py [--input_dir INPUT_FOLDER_PATH --input_image INPUT_IMAGE_PATH] [--gen PATH_FOR_SKETCH] [--gentoorg PATH_FOR_GENTOORG] [--orgtogen PATH_FOR_ORGTOGEN]
+python3 sketch.py [--input_dir INPUT_FOLDER_PATH --input_image INPUT_IMAGE_PATH] [--gen PATH_FOR_SKETCH] [--gentoorg PATH_FOR_GENTOORG] [--orgtogen PATH_FOR_ORGTOGEN] [--facecrop value]
 
 To save only the generated sketch, run it with --gen option with the directory (image path) you want to store the generated images
 
@@ -28,6 +28,13 @@ To store a concatenated image with the generated and original picture
 ```bash
                 python sketch.py --input_image INPUT_IMAGE_PATH --gentoorg SKETCH_PATH
                 python sketch.py --input_dir INPUT_DIR_PATH --gentoorg SKETCH_PATH
+```
+
+To use facecrop before sketch Generation
+
+```bash
+                python sketch.py --input_image INPUT_IMAGE_PATH --gen SKETCH_PATH --facecrop 100
+                python sketch.py --input_dir INPUT_DIR_PATH --gen SKETCH_PATH --facecrop 100
 ```
 
 # TODO
