@@ -32,23 +32,40 @@ class MyGaussianBlur(ImageFilter.Filter):
         else:
             return image.gaussian_blur(self.radius)
 
-def remove_dots(image):
+def merge_images(image1, image2):
+    (width1, height1) = image1.size
+    (width2, height2) = image2.size
 
-    img = cv2.imread(image)
-    _, blackAndWhite = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV)
+    # result_width = width1 + width2
+    result_width = width1 *2
+    # result_height = max(height1, height2)
+
+    result_height = height1
+    result = Image.new('RGB', (result_width, result_height))
+    result.paste(im=image1, box=(0, 0))
+    result.paste(im=image2, box=(height1,0))
+    result = result.resize((512,256), Image.ANTIALIAS)
+    return result
+
+def remove_dots(image, val):
+
+    gray_im = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+    _, blackAndWhite = cv2.threshold(gray_im, 127, 255, cv2.THRESH_BINARY_INV)
     nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(blackAndWhite, None, None, None, 8, cv2.CV_32S)
     sizes = stats[1:, -1] #get CC_STAT_AREA component
     img2 = np.zeros((labels.shape), np.uint8)
 
     for i in range(0, nlabels - 1):
-        if sizes[i] >= 50:   #filter small dotted regions
+        if sizes[i] >= val:   #filter small dotted regions
             img2[labels == i + 1] = 255
 
     res = cv2.bitwise_not(img2)
-    result = cv2.imwrite(file1, res)
-    return result
+    #if not os.path.exists("RemoveDot"): os.mkdir("RemoveDot")
+    #result = imsave(os.path.join("RemoveDot", 't' + os.path.basename(image)), res)
+    return res
 
 def facecrop(image, face_crop):
+
     facedata = "haarcascade_frontalface_alt.xml"
     cascade = cv2.CascadeClassifier(facedata)
     img = cv2.imread(image)
@@ -62,8 +79,8 @@ def facecrop(image, face_crop):
         # cv2.rectangle(img, (x,y), (x+w,y+h), (255,255,255))
 
         sub_face = img[y-face_crop:y+h+face_crop, x-face_crop:x+w+face_crop] #face_crop = 100
-        if not os.path.exists("FACECROP"): os.mkdir("FACECROP")
-        imsave(os.path.join("FACECROP", 't' + os.path.basename(image)), sub_face)
+        #if not os.path.exists("FACECROP"): os.mkdir("FACECROP")
+        #imsave(os.path.join("FACECROP", 't' + os.path.basename(image)), sub_face)
         imsave(image, sub_face)
         #sub_face.save(os.path.join("FACECROP", 't' + os.path.basename(image))) #t
         return image
@@ -169,38 +186,62 @@ def sketch(im, color_pic, filename):
 
             return gray_pic, org_pic
 
-def save_gen(gen, sketch, filename):
+def save_gen(gen, sketch, filename, removedots):
+
     sketch.save(os.path.join(gen, 't' + filename))
     print('gray image', os.path.join(gen, 't' + filename), " saved")
     return sketch
 
-def save_orgtogen(gray_pic, org_pic, orgtogen, filename):
+def save_orgtogen(gray_pic, org_pic, orgtogen, filename, sketch, removedots):
 
     combined_pic = np.append(org_pic, gray_pic, axis=1)
     concat_img = Image.fromarray(combined_pic)
     save_combined(concat_img, orgtogen, filename)
     return concat_img
 
-def save_gentoorg(gray_pic, org_pic, gentoorg, filename):
+def save_gentoorg(gray_pic, org_pic, gentoorg, filename, sketch, removedots):
 
     combined_pic = np.append(gray_pic, org_pic, axis=1)
     concat_img = Image.fromarray(combined_pic)
     save_combined(concat_img, gentoorg, filename)
     return concat_img
 
-def save_results(im, color_pic, filename, gen, orgtogen, gentoorg):
+def save_results(im, color_pic, filename, gen, orgtogen, gentoorg, removedots):
 
     gray_pic, org_pic = sketch(im, color_pic, filename)
-    sketch_pic = Image.fromarray(gray_pic, mode = 'RGB')
-    if gen:
-        if not os.path.exists(gen): os.mkdir(gen)
-        save_gen(gen, sketch_pic, os.path.basename(filename))
-    if orgtogen:
-        if not os.path.exists(orgtogen): os.mkdir(orgtogen)
-        save_orgtogen(gray_pic, org_pic, orgtogen, os.path.basename(filename))
-    if gentoorg:
-        if not os.path.exists(gentoorg): os.mkdir(gentoorg)
-        save_gentoorg(gray_pic, org_pic, gentoorg, os.path.basename(filename))
+    if removedots:
+        if not os.path.exists("gray"): os.mkdir("gray")
+        gray = imsave(os.path.join("gray", 't' + os.path.basename(filename)), gray_pic)
+        gray_pic = remove_dots(os.path.join('gray', 't' + os.path.basename(filename)), removedots)
+        gray = imsave(os.path.join("gray", 't' + os.path.basename(filename)), gray_pic)
+        gray_img = Image.open(filename)
+        org_img = Image.open(os.path.join("gray", 't' + os.path.basename(filename)))
+        if gen:
+            if not os.path.exists(gen): os.mkdir(gen)
+            imsave(os.path.join(gen, os.path.basename(filename)), gray_pic)
+            print('gray image', os.path.join(gen, os.path.basename(filename)), " saved")
+        if orgtogen:
+            merged_im = merge_images(gray_img, org_img)
+            if not os.path.exists(orgtogen): os.mkdir(orgtogen)
+            imsave(os.path.join(orgtogen, os.path.basename(filename)), merged_im)
+            print('concat (orgtogen) image saved', os.path.join(orgtogen, os.path.basename(filename)))
+        if gentoorg:
+            merged_im = merge_images(org_img, gray_img)
+            if not os.path.exists(gentoorg): os.mkdir(gentoorg)
+            imsave(os.path.join(gentoorg, os.path.basename(filename)), merged_im)
+            print('concat (gentoorg) image saved', os.path.join(gentoorg, os.path.basename(filename)))
+    else:
+        sketch_pic = Image.fromarray(gray_pic, mode = 'RGB')
+
+        if gen:
+            if not os.path.exists(gen): os.mkdir(gen)
+            save_gen(gen, sketch_pic, os.path.basename(filename), removedots)
+        if orgtogen:
+            if not os.path.exists(orgtogen): os.mkdir(orgtogen)
+            save_orgtogen(gray_pic, org_pic, orgtogen, os.path.basename(filename), sketch_pic, removedots)
+        if gentoorg:
+            if not os.path.exists(gentoorg): os.mkdir(gentoorg)
+            save_gentoorg(gray_pic, org_pic, gentoorg, os.path.basename(filename), sketch_pic, removedots)
 
 def main(args):
 
@@ -211,6 +252,7 @@ def main(args):
     gentoorg = args.gentoorg
     input_image = args.input_image
     face_crop = args.facecrop
+    removedots = args.remove_dots
 
     #parameter
     max_length=20
@@ -224,10 +266,11 @@ def main(args):
         if not os.path.exists(input_image): os.mkdir(input_image)
         filename = input_image
         cropped_im = facecrop(filename, face_crop)
+        #remove_dots(files1)
         im = Image.open(filename).convert('L')
         color_pic = Image.open(cropped_im)
 
-        save_results(im, color_pic, filename, gen, orgtogen, gentoorg)
+        save_results(im, color_pic, filename, gen, orgtogen, gentoorg, removedots)
 
     if input_dir:
         input_paths = glob.glob(input_dir+ '/*.jpg')
@@ -239,11 +282,11 @@ def main(args):
             if face_crop:
                 cropped_im = facecrop(files1, face_crop)
                 print("Face cropped saved:", files1)
-            #remove_dots(files1)
             im = Image.open(files1).convert('L')
             color_pic = Image.open(files1)
             #remove_dots(im)
-            save_results(im, color_pic, filename, gen, orgtogen, gentoorg)
+            filename = os.path.join(input_dir, filename)
+            save_results(im, color_pic, filename, gen, orgtogen, gentoorg, removedots)
 
     if not input_dir and not input_image:
          print(parser.print_help(sys.stderr))
@@ -257,5 +300,6 @@ if __name__ == '__main__':
     parser.add_argument('--orgtogen', type=str)
     parser.add_argument('--facecrop', type=int)
     parser.add_argument('--gentoorg', type=str)#, nargs='?')
+    parser.add_argument('--remove_dots', type=int)#action='store_true')
     args = parser.parse_args()
     main(args)

@@ -37,6 +37,13 @@ To use facecrop before sketch Generation
                 python sketch.py --input_dir INPUT_DIR_PATH --gen SKETCH_PATH --facecrop 100
 ```
 
+To remove dots after sketches
+
+```bash
+                python sketch.py --input_image INPUT_IMAGE_PATH --gen SKETCH_PATH --facecrop 100 --remove_dots 50
+                python sketch.py --input_dir INPUT_DIR_PATH --gen SKETCH_PATH --facecrop 100 --remove_dots 50
+```
+
 # TODO
 
 - Incorporate with face detect, crop and remove dots codebase
