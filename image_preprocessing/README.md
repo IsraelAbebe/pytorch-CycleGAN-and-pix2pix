@@ -7,7 +7,7 @@ Sketch-to-image synthesis using Conditional Generative Adversarial Networks (cGA
 
 # Usage
 
-python3 sketch.py [--input_dir INPUT_FOLDER_PATH --input_image INPUT_IMAGE_PATH] [--gen PATH_FOR_SKETCH] [--gentoorg PATH_FOR_GENTOORG] [--orgtogen PATH_FOR_ORGTOGEN] [--facecrop value]
+python3 sketch.py [--input_dir INPUT_FOLDER_PATH --input_image INPUT_IMAGE_PATH] [--gen PATH_FOR_SKETCH] [--gentoorg PATH_FOR_GENTOORG] [--orgtogen PATH_FOR_ORGTOGEN] [--facecrop value] [--remove_dots value]
 
 To save only the generated sketch, run it with --gen option with the directory (image path) you want to store the generated images
 
@@ -41,6 +41,7 @@ To remove dots after sketches
 
 ```bash
                 python sketch.py --input_image INPUT_IMAGE_PATH --gen SKETCH_PATH --facecrop 100 --remove_dots 50
+
                 python sketch.py --input_dir INPUT_DIR_PATH --gen SKETCH_PATH --facecrop 100 --remove_dots 50
 ```
 

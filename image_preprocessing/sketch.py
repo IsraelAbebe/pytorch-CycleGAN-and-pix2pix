@@ -133,18 +133,27 @@ def save_combined(im, path, filename):
     wsize = 512  # double the resolution 1024
     w, h = im.size
     hsize = int(h * wsize / float(w))
+    im_ext = [".jpg", ".jpeg", ".png"]
+
+    #
+    if not path.endswith(tuple(im_ext)):
+        path = os.path.join(path, filename)
 
     if hsize * 2 > wsize:  # crop to three
         im = im.resize((wsize, hsize))
         bounds1 = (0, 0, wsize, int(wsize / 2)) #/2
         cropImg1 = im.crop(bounds1)
         # cropImg1.show()
-        cropImg1.save(os.path.join(path, 'u' + filename))
+        ###
+        if not os.path.exists(path): os.mkdir(path)
+        cropImg1.save(path)
         bounds2 = (0, hsize - int(wsize / 2), wsize, hsize) #wsize/2
 
     else:
+        if not os.path.exists(path): os.mkdir(path)
         im = im.resize((wsize // 2, (wsize // 4)))
-        im.save(os.path.join(path, 't' + filename))#t
+        ###
+        im.save(path)#t
 
     print('concat image saved')
 
@@ -216,31 +225,45 @@ def save_results(im, color_pic, filename, gen, orgtogen, gentoorg, removedots):
         gray = imsave(os.path.join("gray", 't' + os.path.basename(filename)), gray_pic)
         gray_img = Image.open(filename)
         org_img = Image.open(os.path.join("gray", 't' + os.path.basename(filename)))
+        ###
+        im_ext = [".jpg", ".jpeg", ".png"]
+
+        #
+        #if not path.endswith(tuple(im_ext)):
         if gen:
-            if not os.path.exists(gen): os.mkdir(gen)
-            imsave(os.path.join(gen, os.path.basename(filename)), gray_pic)
+            if gen.endswith(tuple(im_ext)):
+                imsave(gen, gray_pic)
+            else:
+                if not os.path.exists(gen): os.mkdir(gen)
+                imsave(os.path.join(gen, os.path.basename(filename)), gray_pic)
             print('gray image', os.path.join(gen, os.path.basename(filename)), " saved")
         if orgtogen:
             merged_im = merge_images(gray_img, org_img)
-            if not os.path.exists(orgtogen): os.mkdir(orgtogen)
-            imsave(os.path.join(orgtogen, os.path.basename(filename)), merged_im)
+            if orgtogen.endswith(tuple(im_ext)):
+                imsave(orgtogen, merged_im)
+            else:
+                if not os.path.exists(orgtogen): os.mkdir(orgtogen)
+                imsave(os.path.join(orgtogen, os.path.basename(filename)), merged_im)
             print('concat (orgtogen) image saved', os.path.join(orgtogen, os.path.basename(filename)))
         if gentoorg:
             merged_im = merge_images(org_img, gray_img)
-            if not os.path.exists(gentoorg): os.mkdir(gentoorg)
-            imsave(os.path.join(gentoorg, os.path.basename(filename)), merged_im)
+            if gentoorg.endswith(tuple(im_ext)):
+                imsave(gentoorg, merged_im)
+            else:
+                if not os.path.exists(gentoorg): os.mkdir(gentoorg)
+                imsave(os.path.join(gentoorg, os.path.basename(filename)), merged_im)
             print('concat (gentoorg) image saved', os.path.join(gentoorg, os.path.basename(filename)))
     else:
         sketch_pic = Image.fromarray(gray_pic, mode = 'RGB')
 
         if gen:
-            if not os.path.exists(gen): os.mkdir(gen)
+            #if not os.path.exists(gen): os.mkdir(gen)
             save_gen(gen, sketch_pic, os.path.basename(filename), removedots)
         if orgtogen:
-            if not os.path.exists(orgtogen): os.mkdir(orgtogen)
+            #if not os.path.exists(orgtogen): os.mkdir(orgtogen)
             save_orgtogen(gray_pic, org_pic, orgtogen, os.path.basename(filename), sketch_pic, removedots)
         if gentoorg:
-            if not os.path.exists(gentoorg): os.mkdir(gentoorg)
+            #if not os.path.exists(gentoorg): os.mkdir(gentoorg)
             save_gentoorg(gray_pic, org_pic, gentoorg, os.path.basename(filename), sketch_pic, removedots)
 
 def main(args):
