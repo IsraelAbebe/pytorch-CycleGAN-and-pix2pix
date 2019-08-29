@@ -34,6 +34,8 @@ from util.visualizer import save_images
 from util import html
 from PIL import Image
 import cv2
+import numpy as np
+from image_preprocessing import clean 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
     # hard-code some parameters for test
@@ -53,6 +55,26 @@ if __name__ == '__main__':
     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
     if opt.eval:
         model.eval()
+    
+    if opt.name == "black":
+        sketch_testset = []
+        for i,data in enumerate(dataset):
+            print(data)
+            #img = cv2.imread(data, 1)
+            image = image_grayscale(data)
+            image = facecrop(image)
+            image1,image2 = sketch(image,image,data)
+            if not os.path.exists('sketch_result'):
+                os.makedirs('sketch_result')
+            sketch_path = 'sketch_result/'+'new'+str(i)+data+'.jpg';
+            cv2.imwrite(sketch_path,image1)
+            image1= remove_dots(sketch_path,50)
+            cv2.imwrite(sketch_path,image1)
+            sketch_testset.append(sketch_path)
+            #cv2.imshow("Original", image1)
+            #cv2.waitKey(0)
+        dataset = sketch_testset
+    
     for i, data in enumerate(dataset):
         if i >= opt.num_test:  # only apply our model to opt.num_test images.
             break
