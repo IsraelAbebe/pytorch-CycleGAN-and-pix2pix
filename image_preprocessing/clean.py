@@ -3,10 +3,8 @@ import numpy as np
 from PIL import Image
 import os
 
-
-
-def remove_dots(file1):
-    img = cv2.imread(file1, 0)
+def remove_dots(img):
+    #img = cv2.imread(file1, 0)
     _, blackAndWhite = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV)
 
     nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(blackAndWhite, None, None, None, 8, cv2.CV_32S)
@@ -22,10 +20,7 @@ def remove_dots(file1):
     return result
 
 
-def merge_images(file1, file2):
-    image1 = Image.open(file1)
-    image2 = Image.open(file2)
-
+def merge_images(image1, image2):
     (width1, height1) = image1.size
     (width2, height2) = image2.size
 
@@ -39,20 +34,9 @@ def merge_images(file1, file2):
     result.paste(im=image1, box=(0, 0))
     result.paste(im=image2, box=(height1,0))
     result = result.resize((512,256), Image.ANTIALIAS)
-    result.save("result/"+file1)
-
-
-def image_resize(file1):
-    print("saving "+file1)
-    img = Image.open(file1)
-    img = img.resize((512,256), Image.ANTIALIAS)
-    img.save(file1)
-
-
-def image_grayscale(file1):
-    img = cv2.imread(file1, 0)
-    result = cv2.imwrite(file1, res)
     return result
+
+
 
 
 def facecrop(image):
@@ -71,10 +55,7 @@ def facecrop(image):
         # cv2.rectangle(img, (x,y), (x+w,y+h), (255,255,255))
 
         sub_face = img[y-100:y+h+100, x-100:x+w+100]
-        fname, ext = os.path.splitext(image)
-        cv2.imwrite(fname+"_cropped_"+ext, sub_face)
-
-    return
+        return sub_face
 
 
 # sketch_dir = "result/face_emotions/"

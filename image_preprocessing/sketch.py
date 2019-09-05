@@ -145,12 +145,13 @@ def save_combined(im, path, filename):
         cropImg1 = im.crop(bounds1)
         # cropImg1.show()
         ###
-        if not os.path.exists(path): os.mkdir(path)
+        #if not os.path.exists(path): os.mkdir(path)
+        #print("PATH:::", path)
         cropImg1.save(path)
         bounds2 = (0, hsize - int(wsize / 2), wsize, hsize) #wsize/2
 
     else:
-        if not os.path.exists(path): os.mkdir(path)
+        #if not os.path.exists(path): os.mkdir(path)
         im = im.resize((wsize // 2, (wsize // 4)))
         ###
         im.save(path)#t
@@ -257,13 +258,13 @@ def save_results(im, color_pic, filename, gen, orgtogen, gentoorg, removedots):
         sketch_pic = Image.fromarray(gray_pic, mode = 'RGB')
 
         if gen:
-            #if not os.path.exists(gen): os.mkdir(gen)
+            if not os.path.exists(gen): os.mkdir(gen)
             save_gen(gen, sketch_pic, os.path.basename(filename), removedots)
         if orgtogen:
-            #if not os.path.exists(orgtogen): os.mkdir(orgtogen)
+            if not os.path.exists(orgtogen): os.mkdir(orgtogen)
             save_orgtogen(gray_pic, org_pic, orgtogen, os.path.basename(filename), sketch_pic, removedots)
         if gentoorg:
-            #if not os.path.exists(gentoorg): os.mkdir(gentoorg)
+            if not os.path.exists(gentoorg): os.mkdir(gentoorg)
             save_gentoorg(gray_pic, org_pic, gentoorg, os.path.basename(filename), sketch_pic, removedots)
 
 def main(args):
